@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">dma-labo-5</string>
     <string name="hello_world">Hello, World!</string>
+    <string name="btn_draw">Draw</string>
+    <string name="btn_audio">Audio</string>
+    <string name="btn_send">Send</string>
+    <string name="btn_play_audio">Play</string>
 </resources>
