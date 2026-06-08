@@ -5,4 +5,7 @@
     <string name="btn_audio">Audio</string>
     <string name="btn_send">Send</string>
     <string name="btn_play_audio">Play</string>
+    <string name="menu_peers">Connectés</string>
+    <string name="peers_empty">Personne n\'est connecté pour le moment.</string>
+    <string name="hint_message">Message…</string>
 </resources>

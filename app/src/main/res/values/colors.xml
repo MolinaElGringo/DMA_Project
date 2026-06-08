@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_primary">#6750A4</color>
+    <color name="brand_primary_dark">#4F378B</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+
+    <color name="chat_background">#F6F2FB</color>
+
+    <color name="bubble_sent">#6750A4</color>
+    <color name="bubble_sent_text">#FFFFFF</color>
+    <color name="bubble_received">#FFFFFF</color>
+    <color name="bubble_received_text">#1C1B1F</color>
+    <color name="bubble_stroke">#E5DDF0</color>
+
+    <color name="sender_name">#6750A4</color>
+    <color name="time_text">#9E9AA8</color>
+
+    <color name="input_bar_bg">#FFFFFF</color>
+    <color name="edit_bg">#EFE9F6</color>
+    <color name="hint_text">#8A8693</color>
+
+    <!-- waveform sur fond blanc (messages reçus) -->
+    <color name="wave_played">#6750A4</color>
+    <color name="wave_unplayed">#C9BEDD</color>
+    <!-- waveform sur fond violet (messages envoyés) -->
+    <color name="wave_played_on_primary">#FFFFFF</color>
+    <color name="wave_unplayed_on_primary">#B9A7E0</color>
+
+    <color name="rec_red">#E53935</color>
+</resources>

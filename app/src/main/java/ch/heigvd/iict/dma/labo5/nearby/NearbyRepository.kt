@@ -5,8 +5,12 @@ import android.util.Log
 import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
 import ch.heigvd.iict.dma.labo5.model.Peer
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class NearbyRepository(private val context: Context) {
 
@@ -21,18 +25,32 @@ class NearbyRepository(private val context: Context) {
     private val _connectedPeers = MutableStateFlow<List<Peer>>(emptyList())
     val connectedPeers: StateFlow<List<Peer>> = _connectedPeers
 
-    // Payload reçus — le ViewModel écoute ça et construit les messages
-    private val _incomingPayload = MutableStateFlow<Pair<String, ByteArray>?>(null)
-    val incomingPayload: StateFlow<Pair<String, ByteArray>?> = _incomingPayload
+    // Payloads reçus. /!\ On utilise un SharedFlow (pas un StateFlow) :
+    //  - un StateFlow "conflate" : deux payloads reçus coup sur coup => un seul gardé (perte de message)
+    //  - un StateFlow rejoue sa dernière valeur aux nouveaux collecteurs => message traité 2x
+    // Un SharedFlow avec un buffer correspond à la sémantique "flux d'évènements".
+    private val _incomingPayload = MutableSharedFlow<Pair<String, ByteArray>>(
+        extraBufferCapacity = 256,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val incomingPayload: SharedFlow<Pair<String, ByteArray>> = _incomingPayload.asSharedFlow()
 
     // Notre propre nom (défini au démarrage)
     var localUserName: String = "Unknown"
+
+    // Noms découverts (côté discovery) et noms reçus à l'initiation de connexion (côté advertiser)
+    private val discoveredEndpoints = mutableMapOf<String, String>()
+    private val pendingNames = mutableMapOf<String, String>()
+    // endpoints pour lesquels on a déjà demandé une connexion (évite les requêtes en double)
+    private val requestedEndpoints = mutableSetOf<String>()
 
     // CallBacks
 
     private val connectionLifecycleCallback = object : ConnectionLifecycleCallback() {
         override fun onConnectionInitiated(endpointId: String, connectionInfo: ConnectionInfo) {
-            Log.d(TAG, "... ${connectionInfo.endpointName}")
+            Log.d(TAG, "Connection initiated with ${connectionInfo.endpointName}")
+            // On mémorise le nom annoncé par le pair : c'est la seule source fiable côté advertiser.
+            pendingNames[endpointId] = connectionInfo.endpointName
             // On accepte automatiquement toutes les connexions
             connectionsClient.acceptConnection(endpointId, payloadCallback)
         }
@@ -40,18 +58,25 @@ class NearbyRepository(private val context: Context) {
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
             if (result.status.isSuccess) {
                 Log.d(TAG, "Connected to $endpointId")
-                // On cherche le nom dans les peers découverts, sinon "Unknown"
-                val name = discoveredEndpoints[endpointId] ?: "Unknown"
-                val newPeer = Peer(endpointId, name)
-                _connectedPeers.value = _connectedPeers.value + newPeer
+                // Nom : on prend ce qu'on a découvert, sinon ce qui a été annoncé à l'initiation.
+                val name = discoveredEndpoints[endpointId]
+                    ?: pendingNames[endpointId]
+                    ?: "Unknown"
+                // Déduplication : on n'ajoute pas deux fois le même endpoint.
+                if (_connectedPeers.value.none { it.endpointId == endpointId }) {
+                    _connectedPeers.value = _connectedPeers.value + Peer(endpointId, name)
+                }
             } else {
                 Log.w(TAG, "Connection failed to $endpointId : ${result.status}")
+                requestedEndpoints.remove(endpointId)
             }
+            pendingNames.remove(endpointId)
         }
 
         override fun onDisconnected(endpointId: String) {
             Log.d(TAG, "Disconnected from $endpointId")
             _connectedPeers.value = _connectedPeers.value.filter { it.endpointId != endpointId }
+            requestedEndpoints.remove(endpointId)
         }
     }
 
@@ -59,7 +84,8 @@ class NearbyRepository(private val context: Context) {
 
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             payload.asBytes()?.let { bytes ->
-                _incomingPayload.value = Pair(endpointId, bytes)
+                // tryEmit : non bloquant, adapté à un callback ; le buffer évite la perte.
+                _incomingPayload.tryEmit(endpointId to bytes)
             }
         }
 
@@ -68,37 +94,40 @@ class NearbyRepository(private val context: Context) {
         }
     }
 
-
-    private val discoveredEndpoints = mutableMapOf<String, String>()
-
     private val endpointDiscoveryCallback = object : EndpointDiscoveryCallback() {
         override fun onEndpointFound(endpointId: String, info: DiscoveredEndpointInfo) {
             Log.d(TAG, "Endpoint found: $endpointId (${info.endpointName})")
             discoveredEndpoints[endpointId] = info.endpointName
-            // On demande la connexion automatiquement
-            connectionsClient.requestConnection(
-                localUserName,
-                endpointId,
-                connectionLifecycleCallback
-            )
+            // onEndpointFound peut se redéclencher : on ne demande la connexion qu'une fois.
+            if (requestedEndpoints.add(endpointId)) {
+                connectionsClient.requestConnection(
+                    localUserName,
+                    endpointId,
+                    connectionLifecycleCallback
+                ).addOnFailureListener {
+                    Log.w(TAG, "requestConnection failed for $endpointId", it)
+                    requestedEndpoints.remove(endpointId)
+                }
+            }
         }
 
         override fun onEndpointLost(endpointId: String) {
             Log.d(TAG, "Endpoint lost: $endpointId")
             discoveredEndpoints.remove(endpointId)
+            requestedEndpoints.remove(endpointId)
         }
     }
 
     // API
 
     fun startAdvertising() {
-        val optons = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
+        val options = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
 
         connectionsClient.startAdvertising(
             localUserName,
             SERVICE_ID,
             connectionLifecycleCallback,
-            optons
+            options
         ).addOnSuccessListener {
             Log.d(TAG, "Started advertising")
         }.addOnFailureListener { e ->
@@ -121,12 +150,10 @@ class NearbyRepository(private val context: Context) {
     }
 
     fun sendPayload(bytes: ByteArray) {
-        val peers = _connectedPeers.value
-        if (peers.isEmpty()) return
+        val endpointIds = _connectedPeers.value.map { it.endpointId }
+        if (endpointIds.isEmpty()) return
 
         val payload = Payload.fromBytes(bytes)
-        val endpointIds = _connectedPeers.value.map { it.endpointId }
-
         connectionsClient.sendPayload(endpointIds, payload)
             .addOnSuccessListener { Log.d(TAG, "Payload sent") }
             .addOnFailureListener { Log.e(TAG, "Payload send failed: $it") }
@@ -138,5 +165,7 @@ class NearbyRepository(private val context: Context) {
         connectionsClient.stopAllEndpoints()
         _connectedPeers.value = emptyList()
         discoveredEndpoints.clear()
+        pendingNames.clear()
+        requestedEndpoints.clear()
     }
 }

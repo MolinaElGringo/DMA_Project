@@ -9,11 +9,13 @@ enum class MessageType {
 data class Message(
     val id: String = UUID.randomUUID().toString(),
     val senderId: String,
-    val senderName : String,
+    val senderName: String,
     val type: MessageType,
-    val text: String? = null,       // si TEXT
-    val audioData: ByteArray? = null,   // si AUDIO
-    val imageData: ByteArray? = null,   // si DRAWING
+    val text: String? = null,            // si TEXT
+    val audioData: ByteArray? = null,    // si AUDIO
+    val imageData: ByteArray? = null,    // si DRAWING
+    val amplitudes: List<Int>? = null,   // si AUDIO : forme d'onde (valeurs 0..100)
+    val audioDurationMs: Long = 0L,      // si AUDIO : durée en ms
     val timestamp: Long = System.currentTimeMillis()
 ) {
     override fun equals(other: Any?): Boolean {
@@ -22,7 +24,5 @@ data class Message(
         return id == other.id
     }
 
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
+    override fun hashCode(): Int = id.hashCode()
 }

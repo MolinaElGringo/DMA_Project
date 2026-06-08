@@ -1,49 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="4dp">
+    android:paddingHorizontal="6dp"
+    android:paddingVertical="3dp">
 
-    <TextView
-        android:id="@+id/text_sender_name"
+    <LinearLayout
+        android:id="@+id/bubble_column"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:paddingBottom="2dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/text_message"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:maxWidth="280dp"
-        android:padding="8dp"
-        android:background="@drawable/bg_message"
-        android:textSize="15sp"
-        app:layout_constraintTop_toBottomOf="@id/text_sender_name"
-        app:layout_constraintStart_toStartOf="parent" />
+        <TextView
+            android:id="@+id/text_sender_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginBottom="2dp"
+            android:textColor="@color/sender_name"
+            android:textStyle="bold"
+            android:textSize="12sp" />
 
-    <ImageView
-        android:id="@+id/image_message"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:scaleType="fitCenter"
-        android:background="@drawable/bg_message"
-        android:padding="4dp"
-        app:layout_constraintTop_toBottomOf="@id/text_sender_name"
-        app:layout_constraintStart_toStartOf="parent" />
+        <FrameLayout
+            android:id="@+id/bubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_bubble_received"
+            android:padding="10dp">
 
-    <Button
-        android:id="@+id/btn_play_audio"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/btn_play_audio"
-        style="@style/Widget.Material3.Button.TonalButton"
-        app:layout_constraintTop_toBottomOf="@id/text_sender_name"
-        app:layout_constraintStart_toStartOf="parent" />
+            <TextView
+                android:id="@+id/text_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="260dp"
+                android:textColor="@color/bubble_received_text"
+                android:textSize="15sp"
+                android:lineSpacingExtra="2dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <ImageView
+                android:id="@+id/image_message"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/btn_draw" />
+
+            <LinearLayout
+                android:id="@+id/audio_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:minWidth="200dp">
+
+                <ImageButton
+                    android:id="@+id/btn_play_audio"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="7dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_play_arrow"
+                    android:background="@drawable/bg_play_circle_received"
+                    android:contentDescription="@string/btn_play_audio" />
+
+                <ch.heigvd.iict.dma.labo5.ui.WaveformView
+                    android:id="@+id/waveform"
+                    android:layout_width="0dp"
+                    android:layout_height="34dp"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="8dp" />
+
+                <TextView
+                    android:id="@+id/text_duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="34dp"
+                    android:gravity="end"
+                    android:text="0:00"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+</FrameLayout>
