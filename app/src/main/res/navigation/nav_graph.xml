@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/chatFragment">
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="ch.heigvd.iict.dma.labo5.ui.ChatFragment"
+        android:label="ProxyChat" >
+        <action
+            android:id="@+id/action_chat_to_draw"
+            app:destination="@id/drawFragment" />
+        <action
+            android:id="@+id/action_chat_to_peers"
+            app:destination="@id/peersFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/drawFragment"
+        android:name="ch.heigvd.iict.dma.labo5.ui.DrawFragment"
+        android:label="Tableau collaboratif" />
+
+    <fragment
+        android:id="@+id/peersFragment"
+        android:name="ch.heigvd.iict.dma.labo5.ui.PeersFragment"
+        android:label="Pairs connectés" />
+
+</navigation>
