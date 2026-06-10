@@ -110,8 +110,8 @@ class ChatFragment : Fragment() {
             viewModel.connectedPeers.collect { peers ->
                 val count = peers.size
                 activity?.title =
-                    if (count == 0) "PictoChat — personne connecté"
-                    else "PictoChat — $count connecté(s)"
+                    if (count == 0) "ProxyChat — personne connecté"
+                    else "ProxyChat — $count connecté(s)"
             }
         }
     }
